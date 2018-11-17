@@ -142,8 +142,7 @@ func (f Font) Encoder() TextEncoding {
 		case "MacRomanEncoding":
 			return &byteEncoder{&macRomanEncoding}
 		case "Identity-H":
-			// TODO: Should be big-endian UCS-2 decoder
-			return &nopEncoder{}
+			return f.charmapEncoding()
 		default:
 			println("unknown encoding", enc.Name())
 			return &nopEncoder{}
@@ -159,6 +158,19 @@ func (f Font) Encoder() TextEncoding {
 
 	toUnicode := f.V.Key("ToUnicode")
 	if toUnicode.Kind() == Dict {
+		m := readCmap(toUnicode)
+		if m == nil {
+			return &nopEncoder{}
+		}
+		return m
+	}
+
+	return &byteEncoder{&pdfDocEncoding}
+}
+
+func (f *Font) charmapEncoding() TextEncoding {
+	toUnicode := f.V.Key("ToUnicode")
+	if toUnicode.Kind() == Stream {
 		m := readCmap(toUnicode)
 		if m == nil {
 			return &nopEncoder{}
