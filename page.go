@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var addspace = false
+
 // A Page represent a single page in a PDF file.
 // The methods interpret a Page dictionary stored in V.
 type Page struct {
@@ -133,6 +135,7 @@ func (f Font) Width(code int) float64 {
 
 // Encoder returns the encoding between font code point sequences and UTF-8.
 func (f Font) Encoder() TextEncoding {
+	addspace = false
 	enc := f.V.Key("Encoding")
 	switch enc.Kind() {
 	case Name:
@@ -142,6 +145,7 @@ func (f Font) Encoder() TextEncoding {
 		case "MacRomanEncoding":
 			return &byteEncoder{&macRomanEncoding}
 		case "Identity-H":
+			addspace = true
 			return f.charmapEncoding()
 		default:
 			println("unknown encoding", enc.Name())
@@ -426,7 +430,8 @@ func (p Page) Content() Content {
 	var text []Text
 	showText := func(s string) {
 		n := 0
-		for _, ch := range enc.Decode(s) {
+		ld := len(enc.Decode(s))
+		for i, ch := range enc.Decode(s) {
 			Trm := matrix{{g.Tfs * g.Th, 0, 0}, {0, g.Tfs, 0}, {0, g.Trise, 1}}.mul(g.Tm).mul(g.CTM)
 			w0 := g.Tf.Width(int(s[n]))
 			n++
@@ -436,6 +441,9 @@ func (p Page) Content() Content {
 				f = f[i+1:]
 			}
 			text = append(text, Text{f, Trm[0][0], Trm[2][0], Trm[2][1], w0 / 1000 * Trm[0][0], string(ch)})
+			if i >= ld-1 && addspace {
+				text = append(text, Text{f, Trm[0][0], Trm[2][0], Trm[2][1], w0 / 1000 * Trm[0][0], " "})
+			}
 
 			tx := w0/1000*g.Tfs + g.Tc
 			tx *= g.Th
