@@ -303,9 +303,6 @@ func readCmap(toUnicode Value) *cmap {
 		}
 		switch op {
 		case "findresource":
-			category := stk.Pop()
-			key := stk.Pop()
-			fmt.Println("findresource", key, category)
 			stk.Push(newDict())
 		case "begincmap":
 			stk.Push(newDict())
@@ -340,10 +337,7 @@ func readCmap(toUnicode Value) *cmap {
 				m.bfrange = append(m.bfrange, bfrange{srcLo, srcHi, dst})
 			}
 		case "defineresource":
-			category := stk.Pop().Name()
 			value := stk.Pop()
-			key := stk.Pop().Name()
-			fmt.Println("defineresource", key, value, category)
 			stk.Push(value)
 		default:
 			println("interp\t", op)
